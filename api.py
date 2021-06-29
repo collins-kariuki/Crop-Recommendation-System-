@@ -4,7 +4,7 @@ import jwt
 from flask_sqlalchemy import SQLAlchemy
 import uuid
 import datetime
-
+from functools import wraps
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'hiinisiri'
@@ -29,6 +29,29 @@ class Prediction(db.Model):
     pH = db.Column(db.Integer)
     predicted = db.Column(db.String(80))
 
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+
+        if not token:
+            return jsonify({'message' :'token is missing'}), 401
+
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], options={"verify_signature": False})
+            if not data:
+                return jsonify({'message' :'no data'})
+            current_user = User.query.filter_by(public_id = data['public_id']).first()
+            if not current_user:
+                return jsonify({'message' :'no user'})
+        except:
+           return jsonify({'message': 'The token is invalid'}), 401
+
+        return f(current_user, *args, **kwargs)
+    return decorated
 
 @app.route("/")
 def hello_world():
@@ -46,7 +69,8 @@ def create_user():
     return jsonify({'message' : 'User created succesfully'})
 
 @app.route('/user', methods = ['GET'])
-def get_all_user():
+@token_required
+def get_all_user(current_user):
 
     users = User.query.all()
     if not users:
@@ -64,7 +88,8 @@ def get_all_user():
     return jsonify({'users' : output})
 
 @app.route('/user/<user_id>', methods =['GET'])
-def get_one_user(user_id):
+@token_required
+def get_one_user(current_user, user_id):
     user = User.query.filter_by(public_id = user_id).first()
 
     if not user:
@@ -81,11 +106,13 @@ def get_one_user(user_id):
     return jsonify({'user' : output})
 
 @app.route('/user/<user_id>', methods = ['PUT'])
-def modify_user():
+@token_required
+def modify_user(current_user):
     return ''
 
 @app.route('/user/<user_id>', methods = ['DELETE'])
-def delete_user(user_id):
+@token_required
+def delete_user(current_user, user_id):
     user = User.query.filter_by(public_id = user_id).first()
 
     if not user:
