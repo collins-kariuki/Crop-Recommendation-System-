@@ -1,13 +1,18 @@
 from flask import Flask, request, jsonify, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
-import jwt
 from flask_sqlalchemy import SQLAlchemy
-import uuid
-import datetime
+from weather import get_weather
 from functools import wraps
+import numpy as np
+import datetime
+import pickle
+import uuid
+import jwt
+
+
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = 'hiinisiri'
+app.config['SECRET_KEY'] = 'hiinisiri' #to be added to env vars
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////database.db'
 
 db = SQLAlchemy(app)
@@ -137,6 +142,27 @@ def login():
 
     return make_response('Could not verify', 401, {'WWW-Authenticate' : 'Basic realm="Login required'})    
 
+@app.route('/predict', methods = ['POST'])
+@token_required
+def predict(current_user):
+    data = request.get_json()
+    N = data['N']
+    P = data['P']
+    K = data['K']
+    pH = data['pH']
+    rainfall = data['rainfall']
+    temperature, humidity = get_weather(data['city'])
+
+    model_path = 'model.pkl'
+    model = pickle.load(open(model_path, 'rb'))
+
+    data = np.array([[N, P, K, temperature, humidity, pH, rainfall]])
+    prediction = model.predict(data)
+    prediction = prediction[0]
+
+    return jsonify({'prediction': prediction})
+
+# {"N":10 ,"P": 55,"K": 23,"pH": 5.728,"rainfall": 137,"city" : "kikuyu"}
 
 if __name__ == '__main__':
     app.run(debug=True)
