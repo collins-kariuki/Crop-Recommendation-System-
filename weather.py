@@ -1,7 +1,7 @@
 import requests
 
 def get_weather(city_name):
-    api_key = '' #to be added to env vars
+    api_key = os.environ['WEATHER_KEY']
     base_url = "http://api.openweathermap.org/data/2.5/weather?"
     complete_url = base_url + "appid=" + api_key + "&q=" + city_name
     response = requests.get(complete_url)

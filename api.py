@@ -2,17 +2,20 @@ from flask import Flask, request, jsonify, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from weather import get_weather
+from dotenv import load_dotenv
 from functools import wraps
 import numpy as np
 import datetime
 import pickle
 import uuid
 import jwt
+import os
 
+load_dotenv()
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = 'hiinisiri' #to be added to env vars
+app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////database.db'
 
 db = SQLAlchemy(app)
