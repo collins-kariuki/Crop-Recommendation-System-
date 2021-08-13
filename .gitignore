@@ -1,4 +1,4 @@
 .pylintrc
 .vscode
-.env
+
 venv
